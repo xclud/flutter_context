@@ -23,6 +23,8 @@ import android.provider.Telephony
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import com.google.android.gms.auth.api.phone.SmsRetriever
+import com.google.android.gms.auth.api.phone.SmsRetrieverClient
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
@@ -42,6 +44,7 @@ class ContextPlugin : FlutterPlugin, ActivityAware, ActivityResultListener, Meth
     private lateinit var broadcastReceiver: ContextBroadcastReceiver
     private lateinit var appWidgetManager: AppWidgetManager
     private val appWidgetHosts: HashMap<Int, AppWidgetHost> = HashMap<Int, AppWidgetHost>()
+    private val smsRetrieverClients: HashMap<Int, SmsRetrieverClient> = HashMap<Int, SmsRetrieverClient>()
 
 
     @SuppressLint("InlinedApi")
@@ -67,6 +70,7 @@ class ContextPlugin : FlutterPlugin, ActivityAware, ActivityResultListener, Meth
             addAction(Intent.ACTION_PACKAGE_VERIFIED)
             addAction(Intent.ACTION_PACKAGES_SUSPENDED)
             addAction(Intent.ACTION_PACKAGES_UNSUSPENDED)
+            addAction(SmsRetriever.SMS_RETRIEVED_ACTION)
             addDataScheme("package")
         })
     }
@@ -90,6 +94,10 @@ class ContextPlugin : FlutterPlugin, ActivityAware, ActivityResultListener, Meth
             result.success(true)
         } else if (call.method == "getPackageName") {
             result.success(getPackageName())
+        } else if (call.method == "getAppSignatures") {
+            val helper = AppSignatureHelper(context)
+            val signatures = helper.getAppSignatures()
+            result.success(signatures!!)
         } else if (call.method == "openDefaultAppsSettings") {
             openDefaultAppsSettings()
             result.success(true)
@@ -108,6 +116,17 @@ class ContextPlugin : FlutterPlugin, ActivityAware, ActivityResultListener, Meth
             val xStep = call.argument<Double>("xStep")
             val yStep = call.argument<Double>("yStep")
             setWallpaperOffsetSteps(xStep!!.toFloat(), yStep!!.toFloat())
+            result.success(true)
+        } else if (call.method == "SmsRetriever.getClient") {
+            val length = smsRetrieverClients.size
+            val client = SmsRetriever.getClient(this.context)
+            smsRetrieverClients[length] = client
+            result.success(length)
+        } else if (call.method == "SmsRetrieverClient.startSmsRetriever") {
+            val reference = call.arguments<Int>()
+            val client = smsRetrieverClients[reference]
+            client!!.startSmsRetriever()
+
             result.success(true)
         } else if (call.method == "getDefaultSmsPackage") {
             result.success(getDefaultSmsPackage())

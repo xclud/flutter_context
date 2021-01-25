@@ -100,12 +100,35 @@ class AppWidgetHost {
   }
 }
 
+class SmsRetriever {
+  static Future<SmsRetrieverClient> getClient() async {
+    final reference =
+        await _channel.invokeMethod<int>('SmsRetriever.getClient');
+    return SmsRetrieverClient._(reference);
+  }
+}
+
+class SmsRetrieverClient {
+  final int _reference;
+
+  SmsRetrieverClient._(this._reference);
+
+  void startSmsRetriever() {
+    _channel.invokeMethod('SmsRetrieverClient.startSmsRetriever', _reference);
+  }
+}
+
 Future<void> startActivity(Intent intent) async {
   await _channel.invokeMethod('context.startActivity', intent.toJson());
 }
 
 Future<String> getPackageName() async {
   return _channel.invokeMethod('getPackageName');
+}
+
+Future<List<String>> getAppSignatures() async {
+  final list = await _channel.invokeMethod<List>('getAppSignatures');
+  return List<String>.from(list);
 }
 
 Future<String> getPlatformVersion() async {
